@@ -7,3 +7,5 @@ Other tools I tried had issues - some didnt support getting group by index in th
 This tool uses the powerful and fast regex engine in .NET.
 
 ![Image](https://raw.githubusercontent.com/cainy-a/reggie/master/screenshot.png)
+
+`GPL-3.0-or-later` I guess.
