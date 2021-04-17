@@ -10,7 +10,7 @@ namespace Reggie
 	partial class Program
 	{
 		// amount of characters to process at once
-		private const int BlockSize = 5000;
+		private const int BlockSize = 50_000_000; // 50MB block
 		
 		private static void Main(string[] args)
 		{
