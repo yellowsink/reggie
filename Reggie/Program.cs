@@ -26,21 +26,29 @@ namespace Reggie
 
 			static bool KeepReading(Stream stream)
 			{
-				if (stream.CanSeek)
+				try
 				{
 					return stream.Position < stream.Length;
 				}
-
-				return stream.CanRead;
+				catch (NotSupportedException)
+				{
+					return stream.CanRead;
+				}
 			}
 
+
+			var regexEngine = new Regex(parsedArgs.Expression, parsedArgs.EngineFlags);
 			while (KeepReading(inStream))
 			{
 				var block = new byte[BlockSize];
 				inStream.Read(block);
 
 				var blockString    = Encoding.Default.GetString(block).Trim('\0');
-				var replaced = Regex.Replace(blockString, parsedArgs.Expression, parsedArgs.ReplacePattern, parsedArgs.EngineFlags);
+
+				if (blockString.Length == 0)
+					break; // we only got nulls
+				
+				var replaced = regexEngine.Replace(blockString, parsedArgs.ReplacePattern);
 				outStream.Write(Encoding.Default.GetBytes(replaced));
 			}
 			inStream.Dispose();

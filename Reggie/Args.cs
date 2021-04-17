@@ -48,6 +48,9 @@ namespace Reggie
 							case 'e':
 								options |= RegexOptions.ECMAScript;
 								break;
+							case 'j':
+								options |= RegexOptions.Compiled;
+								break;
 							default:
 								Console.WriteLine($"Invalid regex engine flag {flag}");
 								Environment.Exit(1);
@@ -128,14 +131,17 @@ namespace Reggie
 reggie <OPTIONS> <input file (omit if stdin)> <regex expression> <regex replace pattern> <output file (omit if stdout)> 
 -i --stdin  - uses stdin instead of a file
 -o --stdout - uses stdout instead of a file
--f=imsnxe   - regex engine flags
+-f=imsnxej  - regex engine flags
 	more info can be found at https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-options
 	i - case insensitive          - should be obvious enough no?
 	m - multiline mode            - ^ and $ match each line instead of the whole input string
 	s - singleline mode           - . matches every character INCLUDING newlines - usually does not match newlines
 	n - explicit capture          - do not capture unnamed groups - only capture numbered or named groups of form ""(?<name>expression)""
 	x - ignore pattern whitespace - exclude unescaped whitespace from the pattern, any text in the pattern after a # is ignored
-	e - ECMAscript behavior       - the regex engine behaves in an ECMAscript-compliant way");
+	e - ECMAscript behavior       - the regex engine behaves in an ECMAscript-compliant way
+	j - JIT                       - performs Just-in-Time compilation on your expression to machine code, to speed up execution.
+	                                adds significant startup lag, so only use if you have multiple gigabytes of data to process.
+	                                the replace string is unaffected as replace value can change dynamically with regex");
 		}
 	}
 
