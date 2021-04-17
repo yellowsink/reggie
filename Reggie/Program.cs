@@ -33,14 +33,14 @@ namespace Reggie
 
 				return stream.CanRead;
 			}
-			
+
 			while (KeepReading(inStream))
 			{
 				var block = new byte[BlockSize];
 				inStream.Read(block);
 
 				var blockString    = Encoding.Default.GetString(block).Trim('\0');
-				var replaced = Regex.Replace(blockString, parsedArgs.Expression, parsedArgs.ReplacePattern);
+				var replaced = Regex.Replace(blockString, parsedArgs.Expression, parsedArgs.ReplacePattern, parsedArgs.EngineFlags);
 				outStream.Write(Encoding.Default.GetBytes(replaced));
 			}
 			inStream.Dispose();

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Reggie
 {
@@ -20,6 +21,45 @@ namespace Reggie
 			var nonOptionIndex = 0;
 			foreach (var arg in args)
 			{
+				if (arg.StartsWith("-f="))
+				{
+					// regex engine flags!
+					var options = RegexOptions.None;
+					var          flags   = arg[Range.StartAt(3)];
+					foreach (var flag in flags)
+					{
+						switch (flag)
+						{
+							case 'i':
+								options |= RegexOptions.IgnoreCase;
+								break;
+							case 'm':
+								options |= RegexOptions.Multiline;
+								break;
+							case 's':
+								options |= RegexOptions.Singleline;
+								break;
+							case 'n':
+								options |= RegexOptions.ExplicitCapture;
+								break;
+							case 'x':
+								options |= RegexOptions.IgnorePatternWhitespace;
+								break;
+							case 'e':
+								options |= RegexOptions.ECMAScript;
+								break;
+							default:
+								Console.WriteLine($"Invalid regex engine flag {flag}");
+								Environment.Exit(1);
+								break;
+						}
+					}
+
+					parsed.EngineFlags = options;
+					
+					continue;
+				}
+				
 				switch (arg)
 				{
 					case "-i":
@@ -86,18 +126,27 @@ namespace Reggie
 		{
 			Console.WriteLine(@"
 reggie <OPTIONS> <input file (omit if stdin)> <regex expression> <regex replace pattern> <output file (omit if stdout)> 
--i --stdin  uses stdin instead of a file
--o --stdout uses stdout instead of a file");
+-i --stdin  - uses stdin instead of a file
+-o --stdout - uses stdout instead of a file
+-f=imsnxe   - regex engine flags
+	more info can be found at https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-options
+	i - case insensitive          - should be obvious enough no?
+	m - multiline mode            - ^ and $ match each line instead of the whole input string
+	s - singleline mode           - . matches every character INCLUDING newlines - usually does not match newlines
+	n - explicit capture          - do not capture unnamed groups - only capture numbered or named groups of form ""(?<name>expression)""
+	x - ignore pattern whitespace - exclude unescaped whitespace from the pattern, any text in the pattern after a # is ignored
+	e - ECMAscript behavior       - the regex engine behaves in an ECMAscript-compliant way");
 		}
 	}
 
 	internal class Args
 	{
-		public bool   UseStdIn       = false;
-		public bool   UseStdOut      = false;
-		public string InFilePath     = string.Empty;
-		public string OutFilePath    = string.Empty;
-		public string Expression     = string.Empty;
-		public string ReplacePattern = string.Empty;
+		public bool         UseStdIn       = false;
+		public bool         UseStdOut      = false;
+		public string       InFilePath     = string.Empty;
+		public string       OutFilePath    = string.Empty;
+		public string       Expression     = string.Empty;
+		public string       ReplacePattern = string.Empty;
+		public RegexOptions EngineFlags    = RegexOptions.None;
 	}
 }
