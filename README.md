@@ -9,3 +9,11 @@ This tool uses the powerful and fast regex engine in .NET.
 ![Image](https://raw.githubusercontent.com/cainy-a/reggie/master/screenshot.png)
 
 `GPL-3.0-or-later` I guess.
+
+## Examples
+Patch usrbg for Vizality (based on my previous script [here](https://gist.github.com/cainy-a/f29ed1dc9e1b348d4f2436fa18e95db9))
+(this was tested with fish, `\n` may work differently in other shells)
+```fish
+reggie usrbg.css '\\[data-user-id="(.{17,18})"\\]:not\\(img\\)' '$&,'\n'[vz-user-id="$1"]:not(img)' patched.css
+mv patched.css usrbg.css
+```
