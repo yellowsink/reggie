@@ -1,4 +1,6 @@
 # Reggie
+[![`GPL-3.0-or-later`](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](https://github.com/cainy-a/reggie/blob/master/LICENSE.md)
+[![AUR package](https://repology.org/badge/version-for-repo/aur/reggie.svg)](https://repology.org/project/reggie/versions)
 
 A new regex replace CLI tool, as an alternative to sed.
 
@@ -7,8 +9,6 @@ Other tools I tried had issues - some didnt support getting group by index in th
 This tool uses the powerful and fast regex engine in .NET.
 
 ![Image](https://raw.githubusercontent.com/cainy-a/reggie/master/screenshot.png)
-
-`GPL-3.0-or-later` I guess.
 
 ## Examples
 Patch usrbg for Vizality (based on my previous script [here](https://gist.github.com/cainy-a/f29ed1dc9e1b348d4f2436fa18e95db9))
