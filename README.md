@@ -17,3 +17,6 @@ Patch usrbg for Vizality (based on my previous script [here](https://gist.github
 reggie usrbg.css '\\[data-user-id="(.{17,18})"\\]:not\\(img\\)' '$&,'\n'[vz-user-id="$1"]:not(img)' patched.css
 mv patched.css usrbg.css
 ```
+
+## But I want find (like grep) not replace
+Good news! - ripgrep has you covered :) https://github.com/BurntSushi/ripgrep
