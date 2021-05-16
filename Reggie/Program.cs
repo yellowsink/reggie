@@ -16,18 +16,13 @@ namespace Reggie
 		{
 			var parsedArgs = ProcessArgs(args);
 
-			var inPlace = new FileInfo(parsedArgs.InFilePath).FullName
-				       == new FileInfo(parsedArgs.OutFilePath).FullName;
+			var inStream = parsedArgs.UseStdIn
+				? Console.OpenStandardInput()
+				: File.OpenRead(parsedArgs.InFilePath);
 
-			var inStream = inPlace ? File.Open(parsedArgs.InFilePath, FileMode.Open)
-					: parsedArgs.UseStdIn
-						? Console.OpenStandardInput()
-						: File.OpenRead(parsedArgs.InFilePath);
-
-			var outStream = inPlace ? inStream
-				: parsedArgs.UseStdOut
-					? Console.OpenStandardOutput()
-					: File.OpenWrite(parsedArgs.OutFilePath);
+			var outStream = parsedArgs.UseStdOut
+				? Console.OpenStandardOutput()
+				: File.OpenWrite(parsedArgs.OutFilePath);
 
 			static bool KeepReading(Stream stream)
 			{
@@ -47,10 +42,6 @@ namespace Reggie
 			{
 				var block = new byte[BlockSize];
 				inStream.Read(block);
-				if (inPlace && inStream.CanSeek)
-				{
-					inStream.Seek(-Math.Min(BlockSize, inStream.Position), SeekOrigin.Current);
-				}
 
 				var blockString    = Encoding.Default.GetString(block).Trim('\0');
 
