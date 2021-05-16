@@ -1,13 +1,10 @@
 using System;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Reggie
 {
-	// ReSharper disable once ClassNeverInstantiated.Global
-	// ReSharper disable once ArrangeTypeModifiers
-	partial class Program
+	internal static partial class Program
 	{
 		private static Args ProcessArgs(string[] args)
 		{
@@ -16,42 +13,44 @@ namespace Reggie
 				WriteHelp();
 				Environment.Exit(0);
 			}
-			
-			var parsed         = new Args();
-			var nonOptionIndex = 0;
-			for (var i = 0; i < args.Length; i++)
+
+			var parsed = new Args();
+
+			var optionArgs     = args.Where(a => a[0] == '-').ToArray();
+			var positionalArgs = args.Where(a => a[1] != '-').ToArray();
+
+			for (var i = 0; i < optionArgs.Length; i++)
 			{
-				var arg = args[i];
-				
+				var arg = optionArgs[i];
+
 				if (arg.StartsWith("-f="))
 				{
 					// regex engine flags!
-					var options = RegexOptions.None;
-					var flags   = arg[Range.StartAt(3)];
+					var flags = arg[Range.StartAt(3)];
 					foreach (var flag in flags)
 					{
 						switch (flag)
 						{
 							case 'i':
-								options |= RegexOptions.IgnoreCase;
+								parsed.EngineFlags |= RegexOptions.IgnoreCase;
 								break;
 							case 'm':
-								options |= RegexOptions.Multiline;
+								parsed.EngineFlags |= RegexOptions.Multiline;
 								break;
 							case 's':
-								options |= RegexOptions.Singleline;
+								parsed.EngineFlags |= RegexOptions.Singleline;
 								break;
 							case 'n':
-								options |= RegexOptions.ExplicitCapture;
+								parsed.EngineFlags |= RegexOptions.ExplicitCapture;
 								break;
 							case 'x':
-								options |= RegexOptions.IgnorePatternWhitespace;
+								parsed.EngineFlags |= RegexOptions.IgnorePatternWhitespace;
 								break;
 							case 'e':
-								options |= RegexOptions.ECMAScript;
+								parsed.EngineFlags |= RegexOptions.ECMAScript;
 								break;
 							case 'j':
-								options |= RegexOptions.Compiled;
+								parsed.EngineFlags |= RegexOptions.Compiled;
 								break;
 							default:
 								Console.WriteLine($"Invalid regex engine flag {flag}");
@@ -59,8 +58,6 @@ namespace Reggie
 								break;
 						}
 					}
-
-					parsed.EngineFlags = options;
 
 					continue;
 				}
@@ -70,7 +67,6 @@ namespace Reggie
 					case "-i":
 					case "--stdin":
 						parsed.UseStdIn = true;
-						nonOptionIndex++;
 						continue;
 					case "-o":
 					case "--stdout":
@@ -78,7 +74,7 @@ namespace Reggie
 						continue;
 					case "-b":
 					case "--blocksize":
-						if (!int.TryParse(args[i + 1], out var num))
+						if (!int.TryParse(optionArgs[i + 1], out var num))
 						{
 							Console.WriteLine("Invalid block size");
 							Environment.Exit(1);
@@ -86,53 +82,59 @@ namespace Reggie
 						else
 							parsed.BlockSize = num;
 
-						break;
-					default:
-						switch (nonOptionIndex)
-						{
-							// file
-							case 0:
-								parsed.InFilePath = arg;
-								if (File.Exists(parsed.InFilePath)) break;
-								Console.WriteLine("Input file does not exist");
-								Environment.Exit(1);
-								break;
-							// regex expression
-							case 1:
-								parsed.Expression = arg;
-								break;
-							// replace pattern
-							case 2:
-								parsed.ReplacePattern = arg;
-								break;
-							// output file
-							case 3:
-								if (parsed.UseStdOut)
-								{
-									Console.WriteLine("Too many arguments supplied for options");
-									Environment.Exit(1);
-								}
-
-								parsed.OutFilePath = arg;
-								if (File.Exists(parsed.OutFilePath)) break;
-								new FileInfo(parsed.OutFilePath).Create().Close();
-
-
-								break;
-						}
-
-						nonOptionIndex++;
 						continue;
+					default:
+						Console.WriteLine($"Did not understand flag \"{arg}\"");
+						Environment.Exit(1);
+						break;
 				}
 			}
 
-			var neededParams = 4;
-			if (parsed.UseStdIn) neededParams--;
-			if (parsed.UseStdOut) neededParams--;
-			if (args.Count(a => !a.StartsWith('-')) < neededParams)
+			for (var i = 0; i < positionalArgs.Length; i++)
 			{
-				Console.WriteLine("Not enough params");
-				Environment.Exit(1);
+				var arg = positionalArgs[i];
+
+				switch (i)
+				{
+					case 0:
+						if (!parsed.UseStdIn)
+							parsed.InFilePath = arg;
+						else
+							parsed.Expression = arg;
+						continue;
+					case 1:
+						if (!parsed.UseStdIn)
+							parsed.Expression = arg;
+						else
+							parsed.ReplacePattern = arg;
+						continue;
+					case 2:
+						if (!parsed.UseStdIn)
+							parsed.ReplacePattern = arg;
+						else if (!parsed.UseStdOut)
+							parsed.OutFilePath = arg;
+						else
+						{
+							Console.WriteLine("Incorrect number of positional args for given options.");
+							Environment.Exit(1);
+						}
+
+						continue;
+					case 3:
+						if (!parsed.UseStdIn && !parsed.UseStdOut)
+							parsed.OutFilePath = arg;
+						else
+						{
+							Console.WriteLine("Incorrect number of positional args for given options.");
+							Environment.Exit(1);
+						}
+
+						continue;
+					case 4:
+						Console.WriteLine("Incorrect number of positional args.");
+						Environment.Exit(1);
+						continue;
+				}
 			}
 
 			return parsed;
@@ -160,13 +162,13 @@ reggie <OPTIONS> <input file (omit if stdin)> <regex expression> <regex replace 
 
 	internal class Args
 	{
-		public bool         UseStdIn       = false;
-		public bool         UseStdOut      = false;
+		public bool         UseStdIn;
+		public bool         UseStdOut;
 		public string       InFilePath     = string.Empty;
 		public string       OutFilePath    = string.Empty;
 		public string       Expression     = string.Empty;
 		public string       ReplacePattern = string.Empty;
 		public RegexOptions EngineFlags    = RegexOptions.None;
-		public int          BlockSize      = 0;
+		public int          BlockSize;
 	}
 }

@@ -5,9 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace Reggie
 {
-	// ReSharper disable once ClassNeverInstantiated.Global
-	// ReSharper disable once ArrangeTypeModifiers
-	partial class Program
+	internal static partial class Program
 	{
 		private static void Main(string[] args)
 		{
