@@ -9,9 +9,6 @@ namespace Reggie
 	// ReSharper disable once ArrangeTypeModifiers
 	partial class Program
 	{
-		// amount of characters to process at once
-		private const int BlockSize = 50_000_000; // 50MB block
-		
 		private static void Main(string[] args)
 		{
 			var parsedArgs = ProcessArgs(args);
@@ -35,21 +32,31 @@ namespace Reggie
 					return stream.CanRead;
 				}
 			}
-
+			
 
 			var regexEngine = new Regex(parsedArgs.Expression, parsedArgs.EngineFlags);
 			while (KeepReading(inStream))
 			{
-				var block = new byte[BlockSize];
-				inStream.Read(block);
+				string blockString;
 
-				var blockString    = Encoding.Default.GetString(block).Trim('\0');
+				if (parsedArgs.BlockSize != 0)
+				{
+					var block = new byte[parsedArgs.BlockSize];
+					inStream.Read(block);
 
-				if (blockString.Length == 0)
-					break; // we only got nulls
+					blockString = Encoding.Default.GetString(block).Trim('\0');
+
+					if (blockString.Length == 0)
+						break; // we only got nulls
+				}
+				else
+					blockString = File.ReadAllText(parsedArgs.InFilePath);
 				
 				var replaced = regexEngine.Replace(blockString, parsedArgs.ReplacePattern);
-				outStream.Write(Encoding.Default.GetBytes(replaced));
+				if (parsedArgs.BlockSize != 0)
+					outStream.Write(Encoding.Default.GetBytes(replaced));
+				else
+					File.WriteAllText(parsedArgs.OutFilePath, replaced);
 			}
 			inStream.Dispose();
 			outStream.Dispose();

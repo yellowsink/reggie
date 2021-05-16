@@ -19,13 +19,15 @@ namespace Reggie
 			
 			var parsed         = new Args();
 			var nonOptionIndex = 0;
-			foreach (var arg in args)
+			for (var i = 0; i < args.Length; i++)
 			{
+				var arg = args[i];
+				
 				if (arg.StartsWith("-f="))
 				{
 					// regex engine flags!
 					var options = RegexOptions.None;
-					var          flags   = arg[Range.StartAt(3)];
+					var flags   = arg[Range.StartAt(3)];
 					foreach (var flag in flags)
 					{
 						switch (flag)
@@ -59,10 +61,10 @@ namespace Reggie
 					}
 
 					parsed.EngineFlags = options;
-					
+
 					continue;
 				}
-				
+
 				switch (arg)
 				{
 					case "-i":
@@ -74,6 +76,17 @@ namespace Reggie
 					case "--stdout":
 						parsed.UseStdOut = true;
 						continue;
+					case "-b":
+					case "--blocksize":
+						if (!int.TryParse(args[i + 1], out var num))
+						{
+							Console.WriteLine("Invalid block size");
+							Environment.Exit(1);
+						}
+						else
+							parsed.BlockSize = num;
+
+						break;
 					default:
 						switch (nonOptionIndex)
 						{
@@ -99,7 +112,7 @@ namespace Reggie
 									Console.WriteLine("Too many arguments supplied for options");
 									Environment.Exit(1);
 								}
-								
+
 								parsed.OutFilePath = arg;
 								if (File.Exists(parsed.OutFilePath)) break;
 								new FileInfo(parsed.OutFilePath).Create().Close();
@@ -154,5 +167,6 @@ reggie <OPTIONS> <input file (omit if stdin)> <regex expression> <regex replace 
 		public string       Expression     = string.Empty;
 		public string       ReplacePattern = string.Empty;
 		public RegexOptions EngineFlags    = RegexOptions.None;
+		public int          BlockSize      = 0;
 	}
 }
