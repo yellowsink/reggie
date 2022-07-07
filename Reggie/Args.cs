@@ -28,119 +28,69 @@ namespace Reggie
 					// regex engine flags!
 					var flags = arg[3..];
 					foreach (var flag in flags)
-						switch (flag)
+					{
+						RegexOptions? resolved = flag switch
 						{
-							case 'i':
-								parsed.EngineFlags |= RegexOptions.IgnoreCase;
-								break;
-							case 'm':
-								parsed.EngineFlags |= RegexOptions.Multiline;
-								break;
-							case 's':
-								parsed.EngineFlags |= RegexOptions.Singleline;
-								break;
-							case 'n':
-								parsed.EngineFlags |= RegexOptions.ExplicitCapture;
-								break;
-							case 'x':
-								parsed.EngineFlags |= RegexOptions.IgnorePatternWhitespace;
-								break;
-							case 'e':
-								parsed.EngineFlags |= RegexOptions.ECMAScript;
-								break;
-							case 'j':
-								parsed.EngineFlags |= RegexOptions.Compiled;
-								break;
-							default:
-								Console.WriteLine($"Invalid regex engine flag {flag}");
-								Environment.Exit(1);
-								break;
+							'i' => RegexOptions.IgnoreCase,
+							'm' => RegexOptions.Multiline,
+							's' => RegexOptions.Singleline,
+							'n' => RegexOptions.ExplicitCapture,
+							'x' => RegexOptions.IgnorePatternWhitespace,
+							'e' => RegexOptions.ECMAScript,
+							'j' => RegexOptions.Compiled,
+							_   => null
+						};
+
+						if (resolved == null)
+						{
+							Console.WriteLine($"Invalid regex engine flag {flag}");
+							Environment.Exit(1);
 						}
+
+						parsed.EngineFlags |= resolved.Value;
+					}
 
 					continue;
 				}
 
-				switch (arg)
+				if (arg.StartsWith("-b=") || arg.StartsWith("--blocksize="))
 				{
-					case "-i":
-					case "--stdin":
-						parsed.UseStdIn = true;
-						continue;
-					case "-o":
-					case "--stdout":
-						parsed.UseStdOut = true;
-						continue;
-					case "-b":
-					case "--blocksize":
-						if (!int.TryParse(optionArgs[i + 1], out var num))
-						{
-							Console.WriteLine("Invalid block size");
-							Environment.Exit(1);
-						}
-						else { parsed.BlockSize = num; }
-
-						continue;
-					default:
-						Console.WriteLine($"Did not understand flag \"{arg}\"");
+					var numStr = arg.Split("=")[1];
+					if (int.TryParse(numStr, out var num))
+						parsed.BlockSize = num;
+					else
+					{
+						Console.WriteLine("Invalid block size");
 						Environment.Exit(1);
-						break;
+					}
 				}
 			}
 
-			for (var i = 0; i < positionalArgs.Length; i++)
+			if (positionalArgs.Length != 4)
 			{
-				var arg = positionalArgs[i];
-
-				switch (i)
-				{
-					case 0:
-						if (!parsed.UseStdIn)
-							parsed.InFilePath = arg;
-						else
-							parsed.Expression = arg;
-						continue;
-					case 1:
-						if (!parsed.UseStdIn)
-							parsed.Expression = arg;
-						else
-							parsed.ReplacePattern = arg;
-						continue;
-					case 2:
-						if (!parsed.UseStdOut)
-							parsed.OutFilePath = arg;
-						else
-							parsed.ReplacePattern = arg;
-
-						continue;
-					case 3:
-						if (!parsed.UseStdIn && !parsed.UseStdOut) { parsed.OutFilePath = arg; }
-						else
-						{
-							Console.WriteLine("Incorrect number of positional args for given options.");
-							Environment.Exit(1);
-						}
-
-						continue;
-					case 4:
-						Console.WriteLine("Incorrect number of positional args.");
-						Environment.Exit(1);
-						continue;
-				}
+				Console.WriteLine($"Expected 4 positional args but got {positionalArgs.Length}.");
+				Environment.Exit(1);
 			}
+
+			parsed.InFilePath     = args[0];
+			parsed.Expression     = args[1];
+			parsed.ReplacePattern = args[2];
+			parsed.OutFilePath    = args[3];
 
 			return parsed;
 		}
 
 		private static void WriteHelp() => Console.WriteLine(@"
-reggie <OPTIONS> <input file (omit if stdin)> <regex expression> <regex replace pattern> <output file (omit if stdout)>
+reggie <OPTIONS> <input file> <regex expression> <regex replace pattern> <output file>
 
-reggie -i -o <regex expression> <regex replace pattern>
+Use a - for the filename to use stdin and stdout.
 
--i   --stdin     - uses stdin instead of a file
--o   --stdout    - uses stdout instead of a file
--b n --blocksize - use blocks of n bytes instead of the whole file - useful for huge files but some matches may be missed
+OPTIONS:
+  -b=n --blocksize=n - use blocks of n bytes instead of the whole file
+                       useful for huge files but some matches may be missed
+                       requires the in and out streams to be different as both will be opened simultaneously
 
--f=imsnxej       - regex engine flags
+  -f=imsnxej         - regex engine flags
 	more info can be found at https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-options
 	i - case insensitive          - should be obvious enough no?
 	m - multiline mode            - ^ and $ match each line instead of the whole input string
@@ -160,7 +110,5 @@ reggie -i -o <regex expression> <regex replace pattern>
 		public string       InFilePath     = string.Empty;
 		public string       OutFilePath    = string.Empty;
 		public string       ReplacePattern = string.Empty;
-		public bool         UseStdIn;
-		public bool         UseStdOut;
 	}
 }

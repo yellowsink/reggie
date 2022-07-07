@@ -27,13 +27,13 @@ namespace Reggie
 
 		private static async Task ReplaceFull(Args parsedArgs, Regex regexEngine)
 		{
-			var raw = parsedArgs.UseStdIn
+			var raw = parsedArgs.InFilePath == "-"
 						  ? await Console.OpenStandardInput().ReadToEndAsync()
 						  : await File.ReadAllTextAsync(parsedArgs.InFilePath);
 
 			var replaced = regexEngine.Replace(raw, parsedArgs.ReplacePattern);
 
-			if (parsedArgs.UseStdOut)
+			if (parsedArgs.OutFilePath == "-")
 				await Console.OpenStandardOutput().WriteAsync(Encoding.Default.GetBytes(replaced));
 			else
 				await File.WriteAllTextAsync(parsedArgs.OutFilePath, replaced);
@@ -41,11 +41,11 @@ namespace Reggie
 
 		private static async Task ReplaceBlocks(Args parsedArgs, Regex regexEngine)
 		{
-			await using var ins = parsedArgs.UseStdIn
+			await using var ins = parsedArgs.InFilePath == "-"
 									  ? Console.OpenStandardInput()
 									  : File.OpenRead(parsedArgs.InFilePath);
 
-			await using var outs = parsedArgs.UseStdOut
+			await using var outs = parsedArgs.OutFilePath == "-"
 									   ? Console.OpenStandardOutput()
 									   : File.OpenWrite(parsedArgs.OutFilePath);
 
