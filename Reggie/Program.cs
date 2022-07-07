@@ -12,6 +12,35 @@ namespace Reggie
 		{
 			var parsedArgs = ProcessArgs(args);
 
+			var regexEngine = new Regex(parsedArgs.Expression, parsedArgs.EngineFlags);
+
+			if (parsedArgs.BlockSize <= 0)
+				await ReplaceFull(parsedArgs, regexEngine);
+			else await ReplaceBlocks(parsedArgs, regexEngine);
+		}
+
+		private static async Task<string> ReadToEndAsync(this Stream str)
+		{
+			using var sr = new StreamReader(str);
+			return await sr.ReadToEndAsync();
+		}
+
+		private static async Task ReplaceFull(Args parsedArgs, Regex regexEngine)
+		{
+			var raw = parsedArgs.UseStdIn
+						  ? await Console.OpenStandardInput().ReadToEndAsync()
+						  : await File.ReadAllTextAsync(parsedArgs.InFilePath);
+
+			var replaced = regexEngine.Replace(raw, parsedArgs.ReplacePattern);
+
+			if (parsedArgs.UseStdOut)
+				await Console.OpenStandardOutput().WriteAsync(Encoding.Default.GetBytes(replaced));
+			else
+				await File.WriteAllTextAsync(parsedArgs.OutFilePath, replaced);
+		}
+
+		private static async Task ReplaceBlocks(Args parsedArgs, Regex regexEngine)
+		{
 			await using var ins = parsedArgs.UseStdIn
 									  ? Console.OpenStandardInput()
 									  : File.OpenRead(parsedArgs.InFilePath);
@@ -20,34 +49,14 @@ namespace Reggie
 									   ? Console.OpenStandardOutput()
 									   : File.OpenWrite(parsedArgs.OutFilePath);
 
-			static bool KeepReading(Stream stream)
+			while (true)
 			{
-				try { return stream.Position < stream.Length; }
-				catch (NotSupportedException) { return stream.CanRead; }
-			}
+				var block      = new byte[parsedArgs.BlockSize];
+				var readAmount = await ins.ReadAsync(block);
 
+				if (readAmount == 0) break;
 
-			var regexEngine = new Regex(parsedArgs.Expression, parsedArgs.EngineFlags);
-
-			if (parsedArgs.BlockSize == 0)
-			{
-				using var       sr = new StreamReader(ins);
-				await using var sw = new StreamWriter(outs);
-				await sw.WriteAsync(regexEngine.Replace(await sr.ReadToEndAsync(), parsedArgs.ReplacePattern));
-
-				return;
-			}
-
-			while (KeepReading(ins))
-			{
-				var block = new byte[parsedArgs.BlockSize];
-				// ReSharper disable once MustUseReturnValue
-				await ins.ReadAsync(block);
-
-				var blockString = Encoding.Default.GetString(block).Trim('\0');
-
-				if (blockString.Length == 0)
-					break; // we only got nulls
+				var blockString = Encoding.Default.GetString(block).TrimEnd('\0');
 
 				var replaced = regexEngine.Replace(blockString, parsedArgs.ReplacePattern);
 

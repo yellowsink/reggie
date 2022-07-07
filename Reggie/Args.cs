@@ -17,7 +17,7 @@ namespace Reggie
 			var parsed = new Args();
 
 			var optionArgs     = args.Where(a => a[0] == '-').ToArray();
-			var positionalArgs = args.Where(a => a[1] != '-').ToArray();
+			var positionalArgs = args.Where(a => a[0] != '-').ToArray();
 
 			for (var i = 0; i < optionArgs.Length; i++)
 			{
@@ -26,7 +26,7 @@ namespace Reggie
 				if (arg.StartsWith("-f="))
 				{
 					// regex engine flags!
-					var flags = arg[Range.StartAt(3)];
+					var flags = arg[3..];
 					foreach (var flag in flags)
 						switch (flag)
 						{
@@ -106,13 +106,10 @@ namespace Reggie
 							parsed.ReplacePattern = arg;
 						continue;
 					case 2:
-						if (!parsed.UseStdIn) { parsed.ReplacePattern    = arg; }
-						else if (!parsed.UseStdOut) { parsed.OutFilePath = arg; }
+						if (!parsed.UseStdOut)
+							parsed.OutFilePath = arg;
 						else
-						{
-							Console.WriteLine("Incorrect number of positional args for given options.");
-							Environment.Exit(1);
-						}
+							parsed.ReplacePattern = arg;
 
 						continue;
 					case 3:
@@ -147,19 +144,18 @@ reggie -i -o <regex expression> <regex replace pattern>
 	more info can be found at https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-options
 	i - case insensitive          - should be obvious enough no?
 	m - multiline mode            - ^ and $ match each line instead of the whole input string
-	s - singleline mode           - . matches every character INCLUDING newlines - usually does not match newlines
-	n - explicit capture          - do not capture unnamed groups - only capture numbered or named groups of form ""(?<name>expression)""
+	s - singleline mode           - . matches newlines as well (it usually doesn't)
+	n - explicit capture          - do not capture unnamed groups - only capture named groups of form ""(?<mynamedgroup>expression)""
 	x - ignore pattern whitespace - exclude unescaped whitespace from the pattern, any text in the pattern after a # is ignored
 	e - ECMAscript behavior       - the regex engine behaves in an ECMAscript-compliant way
-	j - JIT                       - performs Just-in-Time compilation on your expression to machine code, to speed up execution.
-	                                adds significant startup lag, so only use if you have multiple gigabytes of data to process.
-	                                the replace string is unaffected as replace value can change dynamically with regex");
+	j - JIT                       - performs Just-in-Time compilation on your expression, to speed up execution.
+	                                adds significant startup lag, so only use if you have huge quantities of data to process.");
 	}
 
 	internal class Args
 	{
 		public int          BlockSize;
-		public RegexOptions EngineFlags    = RegexOptions.None;
+		public RegexOptions EngineFlags;
 		public string       Expression     = string.Empty;
 		public string       InFilePath     = string.Empty;
 		public string       OutFilePath    = string.Empty;
