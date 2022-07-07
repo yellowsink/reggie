@@ -16,16 +16,13 @@ namespace Reggie
 
 			var parsed = new Args();
 
-			var optionArgs     = args.Where(a => a[0] == '-').ToArray();
-			var positionalArgs = args.Where(a => a[0] != '-').ToArray();
+			var optionArgs     = args.Where(a => a[0] == '-' && a.Length > 1).ToArray();
+			var positionalArgs = args.Where(a => a[0] != '-' || a.Length == 1).ToArray();
 
-			for (var i = 0; i < optionArgs.Length; i++)
+			foreach (var arg in optionArgs)
 			{
-				var arg = optionArgs[i];
-
 				if (arg.StartsWith("-f="))
 				{
-					// regex engine flags!
 					var flags = arg[3..];
 					foreach (var flag in flags)
 					{
@@ -49,11 +46,8 @@ namespace Reggie
 
 						parsed.EngineFlags |= resolved.Value;
 					}
-
-					continue;
 				}
-
-				if (arg.StartsWith("-b=") || arg.StartsWith("--blocksize="))
+				else if (arg.StartsWith("-b=") || arg.StartsWith("--blocksize="))
 				{
 					var numStr = arg.Split("=")[1];
 					if (int.TryParse(numStr, out var num))
